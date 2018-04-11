@@ -63,7 +63,7 @@ io.on('connection', function(client) {
 	});
 });
 
-server.listen(4200);
+server.listen(process.env.PORT || 4200);
 
 function initGame(){
 	// Define boats positions
