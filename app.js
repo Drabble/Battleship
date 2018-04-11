@@ -88,7 +88,7 @@ function initGame(){
 			}
 		} while(!ok)
 		for(var j = 0; j < boats[i]; j++){
-			boardBoats[x][y+j] = true;
+			boardBoats[x + vertical ? 0 : j][y + vertical ? j : 0] = true;
 		}
 	}
 
