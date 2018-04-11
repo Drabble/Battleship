@@ -77,12 +77,15 @@ function initGame(){
 	shuffle(boats);
 	for(var i = 0; i < boats.length; i++){
 		var vertical = Math.random() > 0.5;
+		var ok;
+		var x;
+		var y;
 		do {
-			var x = Math.floor(Math.random() * (size - (!vertical ? boats[i]-1 : 0)));
-			var y = Math.floor(Math.random() * (size - (vertical ? boats[i]-1 : 0)));
-			var ok = true;
+			x = Math.floor(Math.random() * (size - (!vertical ? boats[i]-1 : 0)));
+			y = Math.floor(Math.random() * (size - (vertical ? boats[i]-1 : 0)));
+			ok = true;
 			for(var j = 0; j < boats[i]; j++){
-				if((vertical && boardBoats[x][y+j]) || (!vertical && boardBoats[x+j][y])){
+				if(boardBoats[x + vertical ? 0 : j][y + vertical ? j : 0]){
 					ok = false;
 				}
 			}
