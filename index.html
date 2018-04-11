@@ -1,0 +1,127 @@
+<!doctype html>  
+<html lang="en">  
+    <head>
+		<title>Battleship</title>
+		<style>
+			body{
+			}
+			h1{
+			}
+			table {
+				box-sizing: border-box; 
+				width: 100%; 
+				height: 80%; 
+				border: black 1px;
+				border-collapse: collapse;
+			}
+			table, th, td{
+				border: 1px solid black;
+			}
+			#result{
+				position: fixed; 
+				top: 50%; 
+				left: 50%; 
+				transform: translate(-50%, -50%); 
+				display: none;
+			}
+		</style>
+    </head>
+    <body>
+        <h1>Battleship</h1>
+		<table id="board" style=""></table>
+        <form id="form" id="chat_form">
+            <input id="input" type="text">
+            <input id="submit" type="submit" value="Send">
+        </form>
+		<ul id="players">
+			<li></li>
+		</ul>
+		<h1 id="result"></h1>
+        <script src="/jquery/dist/jquery.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+		<script>  
+			var socket = io.connect();
+			//var socket = io.connect('http://127.0.0.1:4200');
+			
+			socket.on('players', function(data) {
+				console.log("Update players...");
+				console.log(data);
+				$('#players').empty();
+				for(var i = 0; i < data.length; i++){
+					$('#players').append("<li>" + data[i] + "</li>");
+				}
+			});
+			
+			socket.on('board', function(data) {	
+				console.log("Receive board...");
+				console.log(data);
+				$("#submit").prop('disabled', false);
+				$("#input").prop('disabled', false);
+				$("#result").hide();
+				updateBoard(data);
+			});
+			
+			socket.on('update', function(data) {	
+				console.log("Receive update...");
+				console.log(data);
+				updateBoard(data);
+			});
+			
+			socket.on('win', function(data) {	
+				console.log("Win...");
+				$("#submit").prop('disabled', true);
+				$("#input").prop('disabled', true);
+				$("#result").show();
+				var timeleft = 10;
+				var downloadTimer = setInterval(function(){
+				  $("#result").text("You won!" + (--timeleft));
+				  if(timeleft <= 0)
+					clearInterval(downloadTimer);
+				},1000);
+			});
+			
+			socket.on('lose', function(data) {	
+				console.log("Lose...");
+				$("#submit").prop('disabled', true);
+				$("#input").prop('disabled', true);
+				$("#result").show();
+				var timeleft = 10;
+				var downloadTimer = setInterval(function(){
+				  $("#result").text("You lost!" + (--timeleft));
+				  if(timeleft <= 0)
+					clearInterval(downloadTimer);
+				},1000);
+			});
+
+			$('form').submit(function(e){
+				e.preventDefault();
+				socket.emit('shoot', $('#input').val());
+				$('#input').val("");
+			});
+			
+			function updateBoard(data){
+				$("#board").empty();
+				var html = "";
+				html += "<tr><th></th>";
+				for(var i = 0; i < data[0].length; i++){
+					html += "<th>" + (String.fromCharCode('a'.charCodeAt(0) + i)) + "</th>";
+				}
+				html += "</tr>";
+				for(var i = 0; i < data.length; i++){
+					html += "<tr><th>" + i + "</th>";
+					for(var j = 0; j < data[i].length; j++){
+						if(data[i][j] == 0){
+							html += data+ "<td></td>";
+						} else if(data[i][j] == 1){
+							html += data+ "<td bgcolor=\"#006600\"></td>";
+						} else if (data[i][j] == 2){
+							html += data+ "<td bgcolor=\"#ff5050\"></td>";
+						}
+					}
+					html += "</tr>";
+				}
+				$("#board").append(html);
+			}
+		</script>  
+    </body>
+</html>  
