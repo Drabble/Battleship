@@ -45,14 +45,12 @@ io.on('connection', function(client) {
 					}
 				}
 				if(win){
-				   setTimeout(function() {initGame();io.emit('board', board);}, 10000); // wait ten seconds and start game again
-				   client.emit('win');
-				   client.broadcast.emit('lose');
-				} else{
-					console.log("UPDATE");
-					client.emit('update',board);
-					client.broadcast.emit('update',board);
+					setTimeout(function() {initGame();io.emit('board', board);}, 10000); // wait ten seconds and start game again
+					client.emit('win');
+					client.broadcast.emit('lose');
 				}
+				client.emit('update',board);
+				client.broadcast.emit('update',board);
 			}
 		}
     });
