@@ -83,15 +83,15 @@ function initGame(){
 		do {
 			x = Math.floor(Math.random() * (size - (!vertical ? boats[i]-1 : 0)));
 			y = Math.floor(Math.random() * (size - (vertical ? boats[i]-1 : 0)));
-			ok = true;
+			var ok = true;
 			for(var j = 0; j < boats[i]; j++){
-				if(boardBoats[x + vertical ? 0 : j][y + vertical ? j : 0]){
-					ok = false;
+				if(boardBoats[x + (vertical ? 0 : j)][y + (vertical ? j : 0)]){
+					 ok = false;
 				}
 			}
 		} while(!ok)
 		for(var j = 0; j < boats[i]; j++){
-			boardBoats[x + vertical ? 0 : j][y + vertical ? j : 0] = true;
+			boardBoats[x + (vertical ? 0 : j)][y + (vertical ? j : 0)] = true;
 		}
 	}
 
