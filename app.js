@@ -9,6 +9,34 @@ var size = 10;
 var board = [];
 var boardBoats = [];
 
+class Mutex {
+    constructor () {
+        this.queue = [];
+        this.locked = false;
+    }
+
+    lock () {
+        return new Promise((resolve, reject) => {
+            if (this.locked) {
+                this.queue.push([resolve, reject]);
+            } else {
+                this.locked = true;
+                resolve();
+            }
+        });
+    }
+
+    release () {
+        if (this.queue.length > 0) {
+            const [resolve, reject] = this.queue.shift();
+            resolve();
+        } else {
+            this.locked = false;
+        }
+    }
+}
+const mutex = new Mutex();
+
 initGame();
 
 app.use(express.static(__dirname + '/node_modules'));  
@@ -25,33 +53,38 @@ io.on('connection', function(client) {
 	
     client.on('shoot', function(data) {
 		data = data.toLowerCase();
+		
 		if(data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= '0'.charCodeAt(0) && data.charCodeAt(0) <= '9'.charCodeAt(0)){
 			var y = parseInt(data[0]);
 			var x = parseInt(data[1]);
-			if(board[x][y] == 0){
-				if(boardBoats[x][y]){
-					board[x][y] = 1;
-				} else{
-					board[x][y] = 2;
-				}
-				
-				// On win
-				var win = true;
-				for(var i = 0; i < size; i++){
-					for(var j = 0; j < size; j++){
-						if(boardBoats[i][j] && board[i][j] == 0){
-							win = false;
+			
+			mutex.lock().then(() => {
+				if(board[x][y] == 0){
+					if(boardBoats[x][y]){
+						board[x][y] = 1;
+					} else{
+						board[x][y] = 2;
+					}
+					
+					// On win
+					var win = true;
+					for(var i = 0; i < size; i++){
+						for(var j = 0; j < size; j++){
+							if(boardBoats[i][j] && board[i][j] == 0){
+								win = false;
+							}
 						}
 					}
+					if(win){
+						setTimeout(function() {initGame();io.emit('board', board);}, 10000); // wait ten seconds and start game again
+						client.emit('win');
+						client.broadcast.emit('lose');
+					}
+					client.emit('update',board);
+					client.broadcast.emit('update',board);
 				}
-				if(win){
-					setTimeout(function() {initGame();io.emit('board', board);}, 10000); // wait ten seconds and start game again
-					client.emit('win');
-					client.broadcast.emit('lose');
-				}
-				client.emit('update',board);
-				client.broadcast.emit('update',board);
-			}
+				mutex.release();
+			});
 		}
     });
 	
@@ -86,7 +119,7 @@ function initGame(){
 			var ok = true;
 			for(var j = 0; j < boats[i]; j++){
 				if(boardBoats[x + (vertical ? 0 : j)][y + (vertical ? j : 0)]){
-					 ok = false;
+					ok = false;
 				}
 			}
 		} while(!ok)

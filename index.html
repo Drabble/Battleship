@@ -11,6 +11,7 @@
 			}
 			td{
 				border: 1px solid #FCFFF5;
+				cursor: pointer;
 			}
 			#result{
 				position: fixed; 
@@ -78,9 +79,9 @@
 				console.log("Win...");
 				$("#result").show();
 				var timeleft = 10;
-				$("#result").html("YOU WON! <br/> " + (timeleft));
+				$("#result").html("YOU WON ! <br/> " + (timeleft));
 				var downloadTimer = setInterval(function(){
-				  $("#result").html("YOU WON! <br/> " + (--timeleft));
+				  $("#result").html("YOU WON ! <br/> " + (--timeleft));
 				  if(timeleft <= 0)
 					clearInterval(downloadTimer);
 				},1000);
@@ -92,9 +93,9 @@
 				$("#input").prop('disabled', true);
 				$("#result").show();
 				var timeleft = 10;
-				  $("#result").html("YOU LOST! <br/> " + (timeleft));
+				  $("#result").html("YOU LOST ! <br/> " + (timeleft));
 				var downloadTimer = setInterval(function(){
-				  $("#result").html("YOU LOST! <br/> " + (--timeleft));
+				  $("#result").html("YOU LOST ! <br/> " + (--timeleft));
 				  if(timeleft <= 0)
 					clearInterval(downloadTimer);
 				},1000);
