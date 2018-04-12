@@ -4,7 +4,7 @@
 		<title>Battleship</title>
 		<style>
 			body{
-                background-color: #193441;
+                background-color: #1c1c1c;
 				margin: 0px;
 				color: #FCFFF5;
 				font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -122,11 +122,11 @@
 					html += "<tr><th>" + i + "</th>";
 					for(var j = 0; j < data[i].length; j++){
 						if(data[i][j] == 0){
-							html += data+ "<td bgcolor=\"#0D1B21\" onclick='shoot(event, " + j + ", " + i + ")'></td>";
+							html += data+ "<td bgcolor=\"#0A1C66\" onclick='shoot(event, " + j + ", " + i + ")'></td>";
 						} else if(data[i][j] == 1){
 							html += data+ "<td bgcolor=\"#ff5050\"></td>";
 						} else if (data[i][j] == 2){
-							html += data+ "<td bgcolor=\"#91AAB4\"></td>";
+							html += data+ "<td bgcolor=\"#1339D7\"></td>";
 						}
 					}
 					html += "</tr>";
