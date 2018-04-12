@@ -4,18 +4,12 @@
 		<title>Battleship</title>
 		<style>
 			body{
-			}
-			h1{
-			}
-			table {
-				box-sizing: border-box; 
-				width: 100%; 
-				height: 80%; 
-				border: black 1px;
-				border-collapse: collapse;
+                background-color: #193441;
+				margin: 0px;
+				color: #FCFFF5;
 			}
 			table, th, td{
-				border: 1px solid black;
+				border: 1px solid #FCFFF5;
 			}
 			#result{
 				position: fixed; 
@@ -24,18 +18,30 @@
 				transform: translate(-50%, -50%); 
 				display: none;
 			}
+			#board { 
+				box-sizing: border-box; 
+				border: black 1px;
+				border-collapse: collapse;
+                position: absolute;
+                height: 100%; 
+                width: 80%; 
+				left: 0px; 
+            }
+			#panelRight { 
+				text-align: center;
+                position: absolute;
+                height: 100%; 
+                width: 20%; 
+				right: 0px;
+            }
 		</style>
     </head>
     <body>
-        <h1>Battleship</h1>
 		<table id="board" style=""></table>
-        <form id="form" id="chat_form">
-            <input id="input" type="text">
-            <input id="submit" type="submit" value="Send">
-        </form>
-		<ul id="players">
-			<li></li>
-		</ul>
+		<div id="panelRight">
+			<h2>Players:</h2>
+			<div id="players"></div>
+		</div>
 		<h1 id="result"></h1>
         <script src="/jquery/dist/jquery.js"></script>
         <script src="/socket.io/socket.io.js"></script>
@@ -47,7 +53,7 @@
 				console.log(data);
 				$('#players').empty();
 				for(var i = 0; i < data.length; i++){
-					$('#players').append("<li>" + data[i] + "</li>");
+					$('#players').append("<p>" + data[i] + "</p>");
 				}
 			});
 			
@@ -72,6 +78,7 @@
 				$("#input").prop('disabled', true);
 				$("#result").show();
 				var timeleft = 10;
+				$("#result").text("You won!" + (timeleft));
 				var downloadTimer = setInterval(function(){
 				  $("#result").text("You won!" + (--timeleft));
 				  if(timeleft <= 0)
@@ -92,11 +99,14 @@
 				},1000);
 			});
 
-			$('form').submit(function(e){
+			/*$('form').submit(function(e){
 				e.preventDefault();
 				socket.emit('shoot', $('#input').val());
 				$('#input').val("");
-			});
+			});*/
+			function shoot(e,x,y){
+				socket.emit('shoot', x + "" + y);
+			}
 			
 			function updateBoard(data){
 				$("#board").empty();
@@ -110,7 +120,7 @@
 					html += "<tr><th>" + i + "</th>";
 					for(var j = 0; j < data[i].length; j++){
 						if(data[i][j] == 0){
-							html += data+ "<td></td>";
+							html += data+ "<td onclick='shoot(event, " + j + ", " + i + ")'></td>";
 						} else if(data[i][j] == 1){
 							html += data+ "<td bgcolor=\"#006600\"></td>";
 						} else if (data[i][j] == 2){

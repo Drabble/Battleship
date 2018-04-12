@@ -25,8 +25,8 @@ io.on('connection', function(client) {
 	
     client.on('shoot', function(data) {
 		data = data.toLowerCase();
-		if(data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= 'a'.charCodeAt(0) && data.charCodeAt(0) <= 'j'.charCodeAt(0)){
-			var y = data.charCodeAt(0) - 'a'.charCodeAt(0);
+		if(data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= '0'.charCodeAt(0) && data.charCodeAt(0) <= '9'.charCodeAt(0)){
+			var y = parseInt(data[0]);
 			var x = parseInt(data[1]);
 			if(board[x][y] == 0){
 				if(boardBoats[x][y]){
