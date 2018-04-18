@@ -8,6 +8,7 @@ var boats = [2,3,3,4,5]
 var size = 10;
 var board = [];
 var boardBoats = [];
+var gameFinished = false;
 
 class Mutex {
     constructor () {
@@ -59,7 +60,7 @@ io.on('connection', function(client) {
 			var x = parseInt(data[1]);
 			
 			mutex.lock().then(() => {
-				if(board[x][y] == 0){
+				if(!gameFinished && board[x][y] == 0){
 					if(boardBoats[x][y]){
 						board[x][y] = 1;
 					} else{
@@ -76,9 +77,10 @@ io.on('connection', function(client) {
 						}
 					}
 					if(win){
-						setTimeout(function() {initGame();io.emit('board', board);}, 10000); // wait ten seconds and start game again
+						setTimeout(function() {initGame();io.emit('board', board);gameFinished = false;}, 10000); // wait ten seconds and start game again
 						client.emit('win');
 						client.broadcast.emit('lose');
+						gameFinished = true;
 					}
 					client.emit('update',board);
 					client.broadcast.emit('update',board);
