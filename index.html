@@ -59,8 +59,12 @@
 			socket.on('players', function(data) {
 				console.log("Update players...");
 				$('#players').empty();
-				for(var i = 0; i < data.length; i++){
-					$('#players').append("<p>" + data[i] + "</p>");
+				for(key in data){
+					if(key == socket.id){
+						$('#players').append("<p style='color: green'>" + key + " " + data[key] + "</p>");
+					} else{
+						$('#players').append("<p>" + key + " " + data[key] + "</p>");
+					}
 				}
 			});
 			
@@ -107,6 +111,7 @@
 				$('#input').val("");
 			});*/
 			function shoot(e,x,y){
+				console.log("Shoot " + x + "," + y);
 				socket.emit('shoot', x + "" + y);
 			}
 			
@@ -127,6 +132,8 @@
 							html += data+ "<td bgcolor=\"#ff5050\"></td>";
 						} else if (data[i][j] == 2){
 							html += data+ "<td bgcolor=\"#356291\"></td>";
+						} else if (data[i][j] == 3){
+							html += data+ "<td bgcolor='green'></td>";
 						}
 					}
 					html += "</tr>";

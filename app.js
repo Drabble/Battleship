@@ -3,11 +3,11 @@ var app = express();
 var server = require('http').createServer(app);  
 var io = require('socket.io')(server);
 
-var players = [];
-var boats = [2,3,3,4,5]
-var size = 10;
-var board = [];
-var boardBoats = [];
+var players = {}; // List of players
+var boats = [2,3,3,4,5] // List of boats to place on map
+var size = 10; // Size of board
+var board = []; // Board
+var boardBoats = []; // Board positions
 var gameFinished = false;
 
 class Mutex {
@@ -46,7 +46,7 @@ app.get('/', function(req, res,next) {
 });
 
 io.on('connection', function(client) {  
-	players.push(client.id);
+	players[client.id] = 0;
 	client.emit('players', players);
 	client.broadcast.emit('players', players);
     console.log('Client connected...');
@@ -61,13 +61,40 @@ io.on('connection', function(client) {
 			
 			mutex.lock().then(() => {
 				if(!gameFinished && board[x][y] == 0){
+					// Shoot cell
 					if(boardBoats[x][y]){
 						board[x][y] = 1;
 					} else{
 						board[x][y] = 2;
 					}
 					
-					// On win
+					// Handle boat sunk
+					for(var i = 0; i < boats.length; i++){
+						var sunk = true;
+						for(var j = 0; j < size; j++){
+							for(var k = 0; k < size; k++){
+								if(boardBoats[j][k] == i + 1 && board[j][k] != 1){
+									sunk = false;
+								}
+							}
+						}
+						if(sunk){
+							// Change boat to green
+							for(var j = 0; j < size; j++){
+								for(var k = 0; k < size; k++){
+									if(boardBoats[j][k] == i + 1){
+										board[j][k] = 3;
+									}
+								}
+							}
+							// Give points to player
+							players[client.id] += boats[i];
+							client.emit('players', players);
+							client.broadcast.emit('players', players);
+						}
+					}
+					
+					// Handle win
 					var win = true;
 					for(var i = 0; i < size; i++){
 						for(var j = 0; j < size; j++){
@@ -77,11 +104,39 @@ io.on('connection', function(client) {
 						}
 					}
 					if(win){
-						setTimeout(function() {initGame();io.emit('board', board);gameFinished = false;}, 10000); // wait ten seconds and start game again
-						client.emit('win');
-						client.broadcast.emit('lose');
+						// wait ten seconds and start game again
+						setTimeout(function() {
+							initGame();
+							io.emit('board', board);
+							gameFinished = false;
+							for(key in players){
+								players[key] = 0;
+							}
+						}, 10000);
+						var highestScore = 0;
+						for(key in players){
+							if(players[key] > highestScore){
+								highestScore = players[key];
+							}
+						}
+						for(key in players){
+							let namespace = null;
+							let ns = io.of(namespace || "/");
+							let socket = ns.connected[key] // assuming you have  id of the socket
+							if (socket) {
+								if(players[key] >= highestScore){
+									socket.emit("win");
+								} else{
+									socket.emit("lose");
+								}
+							} else {
+								console.log("Socket not connected...");
+							}
+						}
 						gameFinished = true;
 					}
+					
+					// Update board
 					client.emit('update',board);
 					client.broadcast.emit('update',board);
 				}
@@ -91,7 +146,7 @@ io.on('connection', function(client) {
     });
 	
 	client.on('disconnect', function() {
-		players.splice(players.indexOf(client.id), 1);
+		delete players[client.id];
 		client.broadcast.emit('players', players);
 	});
 });
@@ -105,7 +160,7 @@ function initGame(){
 	for(var i = 0; i < size; i++){
 		var a = [];
 		for(var j = 0; j < size; j++){
-			a.push(false);
+			a.push(0);
 		}
 		boardBoats.push(a);
 	}
@@ -126,7 +181,7 @@ function initGame(){
 			}
 		} while(!ok)
 		for(var j = 0; j < boats[i]; j++){
-			boardBoats[x + (vertical ? 0 : j)][y + (vertical ? j : 0)] = true;
+			boardBoats[x + (vertical ? 0 : j)][y + (vertical ? j : 0)] = i + 1;
 		}
 	}
 
@@ -156,6 +211,5 @@ function shuffle(array) {
     array[currentIndex] = array[randomIndex];
     array[randomIndex] = temporaryValue;
   }
-
   return array;
 }
