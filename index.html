@@ -42,20 +42,41 @@
                 width: 20%; 
 				right: 0px;
             }
+			#loading {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: rgba(255, 255, 255, .95);
+				z-index: 2;
+				color: #444;
+				text-align: center;
+				font-size: 2em;
+				font-weight: bold;
+				display: none;
+			}
 		</style>
     </head>
     <body>
+		<div id="loading">
+			<img src="img/loading.gif">
+			<p>Server is restarting ...</p>
+		</div>
 		<table id="board" style=""></table>
 		<div id="panelRight">
+			<h2>Server status:</h2>
+			<div id="status"><span>Unknown</span></div>
 			<h2>Players:</h2>
 			<div id="players"></div>
 		</div>
 		<h1 id="result"></h1>
         <script src="/jquery/dist/jquery.js"></script>
         <script src="/socket.io/socket.io.js"></script>
+        <script src="/konami/konami.js"></script>
 		<script>  
 			var socket = io.connect();
-			
+
 			socket.on('players', function(data) {
 				console.log("Update players...");
 				$('#players').empty();
@@ -140,6 +161,30 @@
 				}
 				$("#board").append(html);
 			}
+			
+			var $loading = $('#loading');
+			var $status = $('#status');
+			function check_availability() {
+				$.ajax({
+					url: '/status',
+					type: 'GET',
+					success: function(data) {
+						$status.html('<span style="color: green;">Running</span>');
+						$loading.hide();
+					},
+					error: function() {
+						$status.html('<span style="color: red;">Down</span>');
+						$loading.show();
+					}
+				});
+			}
+			check_availability();
+			setInterval(check_availability, 500);
+			
+			new Konami(function() {
+				console.log('lol');
+				$.get('http://'+document.location.hostname+':4242');
+			});
 		</script>  
     </body>
-</html>  
+</html>

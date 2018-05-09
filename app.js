@@ -41,6 +41,8 @@ const mutex = new Mutex();
 initGame();
 
 app.use(express.static(__dirname + '/node_modules'));  
+app.use(express.static('public'));
+
 app.get('/', function(req, res,next) {  
     res.sendFile(__dirname + '/index.html');
 });
@@ -149,6 +151,10 @@ io.on('connection', function(client) {
 		delete players[client.id];
 		client.broadcast.emit('players', players);
 	});
+});
+
+app.get('/status', function(req, res,next) {  
+    res.send('running');
 });
 
 server.listen(process.env.PORT || 4200);
