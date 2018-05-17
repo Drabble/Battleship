@@ -154,7 +154,7 @@ io.on('connection', function(client) {
 });
 
 app.get('/status', function(req, res,next) {  
-    res.send('running');
+    res.send('All good :)');
 });
 
 server.listen(process.env.PORT || 4200);
