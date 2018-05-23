@@ -74,8 +74,20 @@
         <script src="/jquery/dist/jquery.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script src="/konami/konami.js"></script>
+		<script src="/chance/dist/chance.min.js"></script>
 		<script>  
 			var socket = io.connect();
+			
+			socket.on('connect',function() {
+				id = localStorage.getItem("battleship_id");
+				if(id != null){
+					socket.emit('login', id);
+				} else{
+					id = chance.profession() + " " + chance.animal();
+					localStorage.setItem("battleship_id", id);
+					socket.emit('login', id);
+				}
+			});
 
 			socket.on('players', function(data) {
 				console.log("Update players...");

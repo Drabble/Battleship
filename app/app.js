@@ -47,17 +47,21 @@ app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function(client) {  
-	players[client.id] = 0;
-	client.emit('players', players);
-	client.broadcast.emit('players', players);
-    console.log('Client connected...');
-	client.emit('board', board);
+io.on('connection', function(client) { 
+
+	client.on('login', function(data) {
+		client.battleship_id = data;
+		players[client.battleship_id] = 0;
+		client.emit('players', players);
+		client.broadcast.emit('players', players);
+		console.log('Client connected...');
+		client.emit('board', board);
+	});
 	
     client.on('shoot', function(data) {
 		data = data.toLowerCase();
 		
-		if(data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= '0'.charCodeAt(0) && data.charCodeAt(0) <= '9'.charCodeAt(0)){
+		if(client.battleship_id != null && data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= '0'.charCodeAt(0) && data.charCodeAt(0) <= '9'.charCodeAt(0)){
 			var y = parseInt(data[0]);
 			var x = parseInt(data[1]);
 			
@@ -90,7 +94,7 @@ io.on('connection', function(client) {
 								}
 							}
 							// Give points to player
-							players[client.id] += boats[i];
+							players[client.battleship_id] += boats[i];
 							client.emit('players', players);
 							client.broadcast.emit('players', players);
 						}
@@ -148,7 +152,7 @@ io.on('connection', function(client) {
     });
 	
 	client.on('disconnect', function() {
-		delete players[client.id];
+		delete players[client.battleship_id];
 		client.broadcast.emit('players', players);
 	});
 });
