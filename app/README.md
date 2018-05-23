@@ -34,7 +34,7 @@ It is also very simple to deploy the application on Heroku with the following gu
 ## Authors
 
 * **Damien Rochat**
-* **Michaël Sandoz**
+* **MichaÃ«l Sandoz**
 * **Antoine Drabble**
 
 ## License

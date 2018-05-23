@@ -2,22 +2,42 @@ version: '3'
 services:
 
   app:
-    build: .
-    # links:
+    build: ./app
+    container_name: battleship-app
+    # depends_on:
     #   - mongodb
+    networks:
+      - back
+
+  watchdog:
+    build: ./watchdog
+    container_name: battleship-watchdog
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - back
 
   # mongodb:
   #   image: node:10
   #   environment:
   #     MONGO_INITDB_ROOT_USERNAME: app
   #     MONGO_INITDB_ROOT_PASSWORD: app
-    
+  #   networks:
+  #     - back
+
   nginx:
     image: nginx:1
+    container_name: battleship-nginx
     ports:
       - "8080:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     links:
       - app
-  #     - mongodb
+      - watchdog
+    networks:
+      - back
+
+networks:
+  back:
+    driver: bridge
