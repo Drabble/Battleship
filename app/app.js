@@ -51,9 +51,11 @@ io.on('connection', function(client) {
 
 	client.on('login', function(data) {
 		client.battleship_id = data;
-		players[client.battleship_id] = 0;
+		if(players[client.battleship_id] == null){
+			players[client.battleship_id] = 0;
+			client.broadcast.emit('players', players);
+		}
 		client.emit('players', players);
-		client.broadcast.emit('players', players);
 		console.log('Client connected...');
 		client.emit('board', board);
 	});
@@ -152,8 +154,8 @@ io.on('connection', function(client) {
     });
 	
 	client.on('disconnect', function() {
-		delete players[client.battleship_id];
-		client.broadcast.emit('players', players);
+		//delete players[client.battleship_id];
+		//client.broadcast.emit('players', players);
 	});
 });
 
