@@ -1,7 +1,11 @@
-var express = require('express');  
-var app = express();  
-var server = require('http').createServer(app);  
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
 var io = require('socket.io')(server);
+var MongoClient = require('mongodb').MongoClient;
+
+var mongodb_url = 'mongodb://mongodb:27017/battleship';
+var collection;
 
 var players = {}; // List of players
 var boats = [2,3,3,4,5] // List of boats to place on map
@@ -38,16 +42,20 @@ class Mutex {
 }
 const mutex = new Mutex();
 
-initGame();
+MongoClient.connect(mongodb_url, function(err, db) {
+  if (err) throw err;
+  collection = db.db('battleship').collection('status');
+  initGame();
+});
 
-app.use(express.static(__dirname + '/node_modules'));  
+app.use(express.static(__dirname + '/node_modules'));
 app.use(express.static('public'));
 
-app.get('/', function(req, res,next) {  
+app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function(client) { 
+io.on('connection', function(client) {
 
 	client.on('login', function(data) {
 		client.battleship_id = data;
@@ -58,15 +66,17 @@ io.on('connection', function(client) {
 		client.emit('players', players);
 		console.log('Client connected...');
 		client.emit('board', board);
+
+    saveGame();
 	});
-	
-    client.on('shoot', function(data) {
+
+  client.on('shoot', function(data) {
 		data = data.toLowerCase();
-		
+
 		if(client.battleship_id != null && data.length == 2 && data.charCodeAt(1) >= '0'.charCodeAt(0) && data.charCodeAt(1) <= '9'.charCodeAt(0) && data.charCodeAt(0) >= '0'.charCodeAt(0) && data.charCodeAt(0) <= '9'.charCodeAt(0)){
 			var y = parseInt(data[0]);
 			var x = parseInt(data[1]);
-			
+
 			mutex.lock().then(() => {
 				if(!gameFinished && board[x][y] == 0){
 					// Shoot cell
@@ -75,7 +85,7 @@ io.on('connection', function(client) {
 					} else{
 						board[x][y] = 2;
 					}
-					
+
 					// Handle boat sunk
 					for(var i = 0; i < boats.length; i++){
 						var sunk = true;
@@ -101,7 +111,7 @@ io.on('connection', function(client) {
 							client.broadcast.emit('players', players);
 						}
 					}
-					
+
 					// Handle win
 					var win = true;
 					for(var i = 0; i < size; i++){
@@ -114,7 +124,7 @@ io.on('connection', function(client) {
 					if(win){
 						// wait ten seconds and start game again
 						setTimeout(function() {
-							initGame();
+							initNewGame();
 							io.emit('board', board);
 							gameFinished = false;
 							for(key in players){
@@ -143,29 +153,49 @@ io.on('connection', function(client) {
 						}
 						gameFinished = true;
 					}
-					
+
 					// Update board
 					client.emit('update',board);
 					client.broadcast.emit('update',board);
 				}
+
+        saveGame();
 				mutex.release();
 			});
 		}
-    });
-	
+  });
+
 	client.on('disconnect', function() {
 		//delete players[client.battleship_id];
 		//client.broadcast.emit('players', players);
 	});
 });
 
-app.get('/status', function(req, res,next) {  
+app.get('/status', function(req, res,next) {
     res.send('All good :)');
 });
 
 server.listen(process.env.PORT || 4200);
 
-function initGame(){
+function initGame() {
+  collection.findOne({ id: 42 }, function(err, res) {
+    if (err) throw error;
+
+    if (res) {
+        players = res.players;
+        boats = res.boats;
+        size = res.size;
+        board = res.board;
+        boardBoats = res.board_boats;
+        gameFinished = res.game_finished;
+    }
+    else {
+        initNewGame();
+    }
+  });
+}
+
+function initNewGame() {
 	// Define boats positions
 	board = [];
 	boardBoats = [];
@@ -205,6 +235,8 @@ function initGame(){
 		}
 		board.push(a);
 	}
+
+  saveGame();
 }
 
 // Shuffle an array
@@ -224,4 +256,19 @@ function shuffle(array) {
     array[randomIndex] = temporaryValue;
   }
   return array;
+}
+
+function saveGame() {
+  var doc = {
+    id: 42,
+    players: players,
+    boats: boats,
+    size: size,
+    board: board,
+    board_boats: boardBoats,
+    game_finished: gameFinished
+  };
+  collection.update({ id: 42 }, doc, { upsert: true }, function(err, res) {
+    if (err) throw error;
+  });
 }

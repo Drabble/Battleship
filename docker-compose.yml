@@ -4,8 +4,8 @@ services:
   app:
     build: ./app
     container_name: battleship-app
-    # depends_on:
-    #   - mongodb
+    links:
+      - mongodb
     networks:
       - back
 
@@ -17,13 +17,11 @@ services:
     networks:
       - back
 
-  # mongodb:
-  #   image: node:10
-  #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: app
-  #     MONGO_INITDB_ROOT_PASSWORD: app
-  #   networks:
-  #     - back
+  mongodb:
+    image: mongo:3.6
+    container_name: battleship-mongodb
+    networks:
+      - back
 
   nginx:
     image: nginx:1
