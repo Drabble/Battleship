@@ -7,12 +7,16 @@ var MongoClient = require('mongodb').MongoClient;
 var mongodb_url = 'mongodb://mongodb:27017/battleship';
 var collection;
 
+var SERVER_ID = 42;
+
 var players = {}; // List of players
 var boats = [2,3,3,4,5] // List of boats to place on map
 var size = 10; // Size of board
 var board = []; // Board
 var boardBoats = []; // Board positions
 var gameFinished = false;
+
+var clients = {};
 
 class Mutex {
     constructor () {
@@ -42,12 +46,6 @@ class Mutex {
 }
 const mutex = new Mutex();
 
-MongoClient.connect(mongodb_url, function(err, db) {
-  if (err) throw err;
-  collection = db.db('battleship').collection('status');
-  initGame();
-});
-
 app.use(express.static(__dirname + '/node_modules'));
 app.use(express.static('public'));
 
@@ -59,12 +57,14 @@ io.on('connection', function(client) {
 
 	client.on('login', function(data) {
 		client.battleship_id = data;
+    clients[client.battleship_id] = client;
+
 		if(players[client.battleship_id] == null){
 			players[client.battleship_id] = 0;
 			client.broadcast.emit('players', players);
 		}
 		client.emit('players', players);
-		console.log('Client connected...');
+		console.log('Client '+client.battleship_id+' connected...');
 		client.emit('board', board);
 
     saveGame();
@@ -79,6 +79,8 @@ io.on('connection', function(client) {
 
 			mutex.lock().then(() => {
 				if(!gameFinished && board[x][y] == 0){
+          console.log('debug', 'shoot !');
+
 					// Shoot cell
 					if(boardBoats[x][y]){
 						board[x][y] = 1;
@@ -109,6 +111,7 @@ io.on('connection', function(client) {
 							players[client.battleship_id] += boats[i];
 							client.emit('players', players);
 							client.broadcast.emit('players', players);
+              saveGame();
 						}
 					}
 
@@ -125,30 +128,29 @@ io.on('connection', function(client) {
 						// wait ten seconds and start game again
 						setTimeout(function() {
 							initNewGame();
-							io.emit('board', board);
-							gameFinished = false;
-							for(key in players){
-								players[key] = 0;
-							}
+              gameFinished = false;
+              for(key in players){
+                players[key] = 0;
+              }
+              io.emit('board', board);
+              io.emit('players', players);
 						}, 10000);
-						var highestScore = 0;
+            var highestScore = 0;
+            var winner_id;
 						for(key in players){
 							if(players[key] > highestScore){
 								highestScore = players[key];
+                winner_id = key;
 							}
 						}
-						for(key in players){
-							let namespace = null;
-							let ns = io.of(namespace || "/");
-							let socket = ns.connected[key] // assuming you have  id of the socket
-							if (socket) {
-								if(players[key] >= highestScore){
-									socket.emit("win");
-								} else{
-									socket.emit("lose");
-								}
-							} else {
-								console.log("Socket not connected...");
+
+						for(key in clients){
+              let client = clients[key];
+							if (client.battleship_id == winner_id) {
+								client.emit("win");
+							}
+              else{
+								client.emit("lose");
 							}
 						}
 						gameFinished = true;
@@ -157,9 +159,9 @@ io.on('connection', function(client) {
 					// Update board
 					client.emit('update',board);
 					client.broadcast.emit('update',board);
+          saveGame();
 				}
 
-        saveGame();
 				mutex.release();
 			});
 		}
@@ -175,23 +177,48 @@ app.get('/status', function(req, res,next) {
     res.send('All good :)');
 });
 
-server.listen(process.env.PORT || 4200);
+MongoClient.connect(mongodb_url, function(err, db) {
+  if (err) throw error;
+
+  collection = db.db('battleship').collection('status');
+
+  initGame();
+
+  server.listen(process.env.PORT || 4200);
+});
+
+function saveGame() {
+  var doc = {
+    id: SERVER_ID,
+    players: players,
+    board: board,
+    board_boats: boardBoats,
+    game_finished: gameFinished
+  };
+  collection.update({ id: SERVER_ID }, doc, { upsert: true }, function(err, res) {
+    if (err) throw error;
+  });
+}
 
 function initGame() {
-  collection.findOne({ id: 42 }, function(err, res) {
+  collection.findOne({ id: SERVER_ID }, function(err, res) {
     if (err) throw error;
 
     if (res) {
-        players = res.players;
-        boats = res.boats;
-        size = res.size;
-        board = res.board;
-        boardBoats = res.board_boats;
-        gameFinished = res.game_finished;
+        if (res.game_finished) {
+            initNewGame();
+        }
+        else {
+          players = res.players;
+          board = res.board;
+          boardBoats = res.board_boats;
+          gameFinished = res.game_finished;
+        }
     }
     else {
         initNewGame();
     }
+    saveGame();
   });
 }
 
@@ -235,8 +262,6 @@ function initNewGame() {
 		}
 		board.push(a);
 	}
-
-  saveGame();
 }
 
 // Shuffle an array
@@ -256,19 +281,4 @@ function shuffle(array) {
     array[randomIndex] = temporaryValue;
   }
   return array;
-}
-
-function saveGame() {
-  var doc = {
-    id: 42,
-    players: players,
-    boats: boats,
-    size: size,
-    board: board,
-    board_boats: boardBoats,
-    game_finished: gameFinished
-  };
-  collection.update({ id: 42 }, doc, { upsert: true }, function(err, res) {
-    if (err) throw error;
-  });
 }

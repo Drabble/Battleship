@@ -16,6 +16,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - back
+    depends_on:
+      - app
 
   mongodb:
     image: mongo:3.6
@@ -26,8 +28,8 @@ services:
   nginx:
     image: nginx:1
     container_name: battleship-nginx
-    ports:
-      - "8080:80"
+    # ports:
+    #   - "8080:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     links:
